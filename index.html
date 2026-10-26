@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <title>今日待办</title>
+<style>/* ============================================================
+   macOS 现代桌面 · ARG 模板样式
+   顶部菜单栏 + 访达风格窗口（侧边栏/内容/口令） + 玻璃 Dock
+   ============================================================ */
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body.arg-desktop {
+  font-family: var(--arg-font-family, -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif);
+  color: var(--arg-text-color, #1d1d1f);
+  -webkit-font-smoothing: antialiased;
+}
+
+.desktop {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--arg-bg-color, #0e1116);
+}
+
+/* ---------------- 壁纸层 ---------------- */
+.desktop__wallpaper {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 78% 18%, rgba(64, 96, 178, 0.55) 0%, transparent 55%),
+    radial-gradient(90% 80% at 18% 78%, rgba(122, 64, 158, 0.45) 0%, transparent 55%),
+    linear-gradient(160deg, #10131c 0%, #1b2030 45%, #0a0c12 100%);
+}
+.desktop__vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 100% at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+/* ---------------- 顶部菜单栏 ---------------- */
+.menubar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 26px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background: rgba(34, 34, 40, 0.82);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  backdrop-filter: blur(18px) saturate(1.4);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  user-select: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.menubar__left,
+.menubar__right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 100%;
+}
+.menubar__logo {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8ea8d8 0%, #4a6bb5 60%, #243d78 100%);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+  display: inline-block;
+}
+.menubar__item { color: rgba(255, 255, 255, 0.85); }
+.menubar__item--strong { font-weight: 600; color: #fff; }
+.menubar__icon { font-size: 12px; opacity: 0.75; }
+.menubar__clock { font-variant-numeric: tabular-nums; opacity: 0.95; }
+@media (max-width: 640px) {
+  .menubar__item--hide-sm { display: none; }
+}
+
+/* ---------------- 主窗口 ---------------- */
+.window {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -52%);
+  width: min(840px, 94vw);
+  max-height: 76vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--arg-card-bg, #f5f5f7);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.55),
+    0 2px 6px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  z-index: 50;
+}
+.window__titlebar {
+  height: 42px;
+  flex: 0 0 42px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #e9e9ec 100%);
+  border-bottom: 1px solid #d4d4d8;
+  position: relative;
+}
+.traffic { display: flex; gap: 8px; }
+.traffic__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.traffic__dot--close { background: #ff5f57; }
+.traffic__dot--min   { background: #febc2e; }
+.traffic__dot--max   { background: #28c840; }
+.window__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3a3a3c;
+  text-align: center;
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 110px;
+}
+.window__tools { margin-left: auto; display: flex; gap: 10px; color: #8e8e93; font-size: 13px; }
+.window__tool { cursor: default; }
+
+.window__body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+@media (max-width: 560px) {
+  .window__body { flex-direction: column; }
+}
+
+/* ---------------- 侧边栏 ---------------- */
+.sidebar {
+  width: 188px;
+  flex: 0 0 188px;
+  padding: 14px 10px;
+  background: rgba(236, 236, 239, 0.9);
+  border-right: 1px solid #d8d8dc;
+  overflow-y: auto;
+}
+@media (max-width: 560px) {
+  .sidebar { width: 100%; flex: none; border-right: none; border-bottom: 1px solid #d8d8dc; }
+}
+.sidebar__heading {
+  margin: 10px 8px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6e6e73;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.sidebar__static {
+  display: block;
+  padding: 5px 8px;
+  font-size: 13px;
+  color: #48484a;
+}
+.arg-link-item {
+  display: block;
+  text-decoration: none;
+  padding: 7px 10px;
+  margin: 2px 0;
+  border-radius: 7px;
+  color: #1d1d1f;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.arg-link-item:hover { background: rgba(0, 0, 0, 0.06); }
+.arg-link-title { display: block; font-size: 13px; font-weight: 500; }
+.arg-link-desc { display: block; font-size: 11px; color: #8e8e93; margin-top: 2px; }
+
+/* ---------------- 内容区 ---------------- */
+.window__content {
+  flex: 1;
+  min-width: 0;
+  padding: 24px 28px 28px;
+  overflow-y: auto;
+  background: #ffffff;
+}
+@media (max-width: 560px) { .window__content { padding: 16px; } }
+.content__image {
+  display: block;
+  max-width: 100%;
+  max-height: 240px;
+  border-radius: 10px;
+  margin: 0 auto 16px;
+  object-fit: cover;
+}
+.content__image[src=""],
+.content__image:not([src]) { display: none; }
+.content__title {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1d1d1f;
+}
+.content__date {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: #8e8e93;
+  font-variant-numeric: tabular-nums;
+}
+.content__body {
+  font-size: 14.5px;
+  line-height: 1.75;
+  color: #3a3a3c;
+  white-space: normal;
+}
+.content__body br { content: ""; display: block; margin: 6px 0; }
+
+.content__field {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #e5e5ea;
+}
+.content__label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6e6e73;
+  margin-bottom: 8px;
+}
+.content__row { display: flex; gap: 10px; }
+.content__input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  font-size: 14px;
+  border: 1px solid #d1d1d6;
+  border-radius: 8px;
+  outline: none;
+  background: #fff;
+  color: #1d1d1f;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.content__input:focus {
+  border-color: var(--arg-primary-color, #0a84ff);
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.18);
+}
+.content__submit {
+  padding: 9px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  background: var(--arg-primary-color, #0a84ff);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+.content__submit:hover { filter: brightness(1.12); }
+.content__submit:active { filter: brightness(0.94); }
+
+/* ---------------- Dock ---------------- */
+.dock {
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.32);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  backdrop-filter: blur(24px) saturate(1.6);
+  border-radius: 20px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+.dock__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  cursor: default;
+}
+.dock__item[data-arg-link] { cursor: pointer; }
+.dock__item:hover {
+  transform: translateY(-8px) scale(1.12);
+}
+.dock__glyph {
+  font-size: 22px;
+  line-height: 1;
+  color: #3a3a3c;
+}
+.dock__glyph--mono {
+  font-family: "SF Mono", "Menlo", Consolas, monospace;
+  font-weight: 700;
+}
+.dock__sep {
+  width: 1px;
+  height: 38px;
+  align-self: center;
+  background: rgba(255, 255, 255, 0.5);
+  margin: 0 4px;
+}
+
+/* 聊天图标 · 新消息红点 */
+.dock__item--chat::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ff3b30;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 6px rgba(255, 59, 48, 0.85);
+  animation: arg-badge-pulse 1.6s ease-in-out infinite;
+}
+@keyframes arg-badge-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.72; transform: scale(1.18); }
+}
+
+@media (max-width: 560px) {
+  .dock { gap: 6px; padding: 6px 8px; border-radius: 16px; }
+  .dock__item { width: 38px; height: 38px; }
+  .dock__glyph { font-size: 18px; }
+}
+
+    :root {
+      --arg-primary-color: #0a84ff;
+      --arg-bg-color: #0e1116;
+      --arg-card-bg: #f5f5f7;
+      --arg-text-color: #1d1d1f;
+      --arg-font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    .arg-atmosphere-crt:before {
+      content: " ";
+      display: block;
+      position: fixed;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      z-index: 99999;
+      background-size: 100% 3px, 6px 100%;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+    .arg-atmosphere-vignette:after {
+      content: " ";
+      display: block;
+      position: fixed;
+      inset: 0;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.6);
+      pointer-events: none;
+      z-index: 99998;
+    }
+    .arg-atmosphere-glitch {
+      animation: arg-glitch-flicker 4s infinite;
+    }
+    .arg-redacted {
+      color: transparent !important;
+      background: repeating-linear-gradient(45deg, #151515 0 3px, #555 3px 6px) !important;
+      border-radius: 2px;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+      cursor: help;
+    }
+    @keyframes arg-glitch-flicker {
+      0%, 95%, 100% { filter: none; }
+      96% { filter: hue-rotate(90deg) contrast(1.2); }
+      97% { filter: invert(0.1) saturate(1.4); }
+      98% { filter: none; }
+    }
+    .sidebar .arg-link-item{display:none !important;} .sidebar__heading:first-of-type{display:none !important;} .content__field{display:none !important;}
+  
+    [data-arg-slot="stickyNote"], .win-sticky-note, .dark-sticky-note, .mac-stickies, .cyber-hud-card { display: none !important; }
+    
+    
+  </style></head>
+<body class="arg-desktop">
+  <div class="desktop">
+    <!-- ==================== 壁纸层 ==================== -->
+    <div class="desktop__wallpaper" aria-hidden="true"></div>
+    <div class="desktop__vignette" aria-hidden="true"></div>
+    <!-- ==================== 顶部菜单栏 ==================== -->
+    <header class="menubar">
+      <div class="menubar__left">
+        <span class="menubar__logo" aria-hidden="true"></span>
+        <span class="menubar__item menubar__item--strong">B</span>
+        <span class="menubar__item menubar__item--hide-sm">文件</span>
+        <span class="menubar__item menubar__item--hide-sm">编辑</span>
+        <span class="menubar__item menubar__item--hide-sm">显示</span>
+        <span class="menubar__item menubar__item--hide-sm">窗口</span>
+        <span class="menubar__item menubar__item--hide-sm">帮助</span>
+      </div>
+      <div class="menubar__right">
+        <span class="menubar__icon" aria-hidden="true">▤</span>
+        <span class="menubar__icon" aria-hidden="true">◐</span>
+        <span class="menubar__clock">2026-10-25 19:58</span>
+      </div>
+    </header>
+    <!-- ==================== 主窗口 ==================== -->
+    <section class="window" role="dialog" aria-label="今日待办">
+      <!-- 标题栏 -->
+      <div class="window__titlebar">
+        <div class="traffic" aria-hidden="true">
+          <span class="traffic__dot traffic__dot--close"></span>
+          <span class="traffic__dot traffic__dot--min"></span>
+          <span class="traffic__dot traffic__dot--max"></span>
+        </div>
+        <h1 class="window__title">今日待办</h1>
+        <div class="window__tools" aria-hidden="true">
+          <span class="window__tool">◧</span>
+          <span class="window__tool">≡</span>
+        </div>
+      </div>
+      <!-- 窗口主体 -->
+      <div class="window__body">
+        <!-- 侧边栏：ARG 链接插槽 -->
+        <aside class="sidebar">
+          <p class="sidebar__heading">位置</p>
+          <a href="javascript:void(0)" class="arg-link-item" data-arg-link="浏览器"><span class="arg-link-title">浏览器</span><span class="arg-link-desc">莫桑枬的小红书主页</span></a>
+<a href="javascript:void(0)" class="arg-link-item" data-arg-link="查看新消息"><span class="arg-link-title">查看新消息</span><span class="arg-link-desc">📱 正义联盟聊天</span></a>
+          <p class="sidebar__heading">设备</p>
+          <span class="sidebar__static">Macintosh HD</span>
+          <span class="sidebar__static">外部磁盘</span>
+        </aside>
+        <!-- 内容区 -->
+        <div class="window__content">
+          <img class="content__image" src="" alt="今日待办" loading="lazy">
+          <h2 class="content__title">今日待办</h2>
+          <p class="content__date">2026-10-25 19:58</p>
+          <div class="content__body" data-arg-slot="body">从刚刚起哈尔就一直在发消息，看看他在说什么</div>
+          <!-- ARG 输入入口 -->
+          <div class="content__field">
+            <label class="content__label" for="arg-pass">访问口令</label>
+            <div class="content__row">
+              <input
+                class="content__input"
+                id="arg-pass"
+                type="text"
+                data-arg-input="口令"
+                placeholder="请输入访问口令…"
+                autocomplete="off"
+                spellcheck="false">
+              <button
+                class="content__submit"
+                type="button"
+                data-arg-port="查看新消息">验证</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- ==================== Dock ==================== -->
+    <nav class="dock" aria-label="Dock">
+      <a class="dock__item dock__item--chat" data-arg-link="查看新消息" title="聊天 · 有 3 条新消息" aria-label="聊天">
+        <span class="dock__glyph" aria-hidden="true">💬</span>
+      </a>
+      <a class="dock__item dock__item--term" title="终端" aria-label="终端">
+        <span class="dock__glyph dock__glyph--mono" aria-hidden="true">&gt;_</span>
+      </a>
+      <a class="dock__item dock__item--mail" title="邮件" aria-label="邮件">
+        <span class="dock__glyph" aria-hidden="true">✉</span>
+      </a>
+      <a class="dock__item dock__item--web" data-arg-link="浏览器" title="浏览器" aria-label="浏览器">
+        <span class="dock__glyph" aria-hidden="true">◎</span>
+      </a>
+      <a class="dock__item dock__item--note" title="备忘录" aria-label="备忘录">
+        <span class="dock__glyph" aria-hidden="true">✎</span>
+      </a>
+      <span class="dock__sep" aria-hidden="true"></span>
+      <a class="dock__item dock__item--trash" title="废纸篓" aria-label="废纸篓">
+        <span class="dock__glyph" aria-hidden="true">🗑</span>
+      </a>
+    </nav>
+  </div>
+<script type="application/json" id="arg-config">{"nodeId":"batdesktop","preview":false,"trackProgress":true,"files":{"batdesktop":"index.html","socpage":"socpage.html","detail_cos":"detail_cos.html","detail_beauty":"detail_beauty.html","detail_photo":"detail_photo.html","detail_game":"detail_game.html","detail_comic":"detail_comic.html","teamchat":"teamchat.html","detail_birthday":"detail_birthday.html","detail_ootd":"detail_ootd.html","detail_food":"detail_food.html","detail_craft":"detail_craft.html","detail_music":"detail_music.html","diana_msg":"diana_msg.html","night_cinema":"night_cinema.html"},"rules":{"search":{}},"links":{"浏览器":"socpage","主页":"socpage","socpage":"socpage","socpage.html":"socpage","查看新消息":"teamchat","JL":"teamchat","teamchat":"teamchat","teamchat.html":"teamchat"},"password":"","errorMessage":"❌ 密码错误，请重新输入！","loginTarget":"socpage","notFoundText":"没有找到相关结果","typewriter":false,"atmosphere":"","contacts":[]}</script><script src="arg-runtime.js"></script></body>
+</html>
